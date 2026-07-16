@@ -2,23 +2,18 @@
 #include <vector>
 #include <iomanip>
 #include <wiringPi.h>
+#include <string>
+#include <cstring>
+#include <unistd.h>
 
-/**
- * PIN CONFIGURATION:
- * IMPORTANT: WiringPi uses its own internal pin numbering. 
- * You must map the physical pins on your header to WiringPi pins.
- * 
- * Physical Header (from your image):
- * - Pin 19 (MOSI) -> Map to your WiringPi DI pin
- * - Pin 21 (MISO) -> Map to your WiringPi DO pin
- * - Pin 23 (CLK)  -> Map to your WiringPi SK pin
- * 
- * Run 'gpio readall' in your terminal to see the WiringPi pin mapping 
- * for your specific board if these values don't match.
- */
-const int PIN_SK  = 14; // Update with correct WiringPi Pin # for Header Pin 23
-const int PIN_DI  = 12; // Update with correct WiringPi Pin # for Header Pin 19
-const int PIN_DO  = 13; // Update with correct WiringPi Pin # for Header Pin 21
+// Physical Pin 8  -> wPi 14
+// Physical Pin 12 -> wPi 12
+// Physical Pin 13 -> wPi 13
+// Physical Pin 15 -> wPi 3 (CS Jumper)
+const int PIN_SK  = 14; 
+const int PIN_DI  = 12; 
+const int PIN_DO  = 13; 
+const int PIN_CS  = 3;
 
 class M93C56_GPIO {
 public:
@@ -29,15 +24,17 @@ public:
         pinMode(PIN_SK, OUTPUT);
         pinMode(PIN_DI, OUTPUT);
         pinMode(PIN_DO, INPUT);
+        pinMode(PIN_CS, OUTPUT);
         
         digitalWrite(PIN_SK, LOW);
+        digitalWrite(PIN_CS, LOW); // CS idle
     }
 
     void pulseClock() {
         digitalWrite(PIN_SK, HIGH);
-        delayMicroseconds(10);
+        usleep(50); // Slower clock for reliability
         digitalWrite(PIN_SK, LOW);
-        delayMicroseconds(10);
+        usleep(50);
     }
 
     void sendBit(int bit) {
@@ -51,28 +48,56 @@ public:
     }
 
     uint8_t readByte(int address) {
-        // CS is handled by hardware jumper, so we proceed directly
+        digitalWrite(PIN_CS, HIGH); // Start command
         
-        // Start bit (1) + Read Opcode (10)
-        sendBit(1);
-        sendBit(1);
-        sendBit(0);
+        sendBit(1); // Start bit
+        sendBit(1); // Opcode 1
+        sendBit(0); // Opcode 0 (Read)
 
-        // Send 8-bit address
+        // Address (8 bits)
         for (int i = 7; i >= 0; i--) {
             sendBit((address >> i) & 1);
         }
 
         uint8_t data = 0;
+        // Data (8 bits)
         for (int i = 7; i >= 0; i--) {
             data = (data << 1) | readBit();
         }
-
+        
+        digitalWrite(PIN_CS, LOW); // End command
         return data;
     }
 
-    void printDump(int size = 256) {
-        std::cout << "Reading M93C56 Memory (CS/ORG jumpered):" << std::endl;
+    void writeByte(int address, uint8_t data) {
+        // 1. EWEN (Erase/Write Enable)
+        digitalWrite(PIN_CS, HIGH);
+        sendBit(1); sendBit(0); sendBit(0); // Start(1) Op(00)
+        sendBit(1); sendBit(1);             // Addr (11xxxxxx)
+        for(int i=0; i<6; i++) sendBit(0);  // Padding
+        digitalWrite(PIN_CS, LOW);
+        usleep(1000); // Small delay between commands
+
+        // 2. WRITE
+        digitalWrite(PIN_CS, HIGH);
+        sendBit(1); // Start
+        sendBit(0); sendBit(1); // Op (01)
+        for (int i = 7; i >= 0; i--) sendBit((address >> i) & 1); // Address
+        for (int i = 7; i >= 0; i--) sendBit((data >> i) & 1);    // Data
+        digitalWrite(PIN_CS, LOW);
+        
+        usleep(10000); // Write cycle time (10ms)
+
+        // 3. EWDS (Erase/Write Disable)
+        digitalWrite(PIN_CS, HIGH);
+        sendBit(1); sendBit(0); sendBit(0); // Start(1) Op(00)
+        sendBit(0); sendBit(0);             // Addr (00xxxxxx)
+        for(int i=0; i<6; i++) sendBit(0);  // Padding
+        digitalWrite(PIN_CS, LOW);
+    }
+
+    void printDump(int size = 128) {
+        std::cout << "Reading M93C56 Memory:" << std::endl;
         for (int i = 0; i < size; i++) {
             if (i % 16 == 0) std::cout << std::endl << std::setw(4) << std::setfill('0') << std::hex << i << ": ";
             std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)readByte(i) << " ";
@@ -84,10 +109,21 @@ public:
 int main(int argc, char* argv[]) {
     try {
         M93C56_GPIO eeprom;
-        if (argc > 1 && std::string(argv[1]) == "read") {
+        if (argc < 2) {
+            std::cout << "Usage: sudo ./m93c56_gpio [read|write \"text\"]" << std::endl;
+            return 1;
+        }
+
+        std::string mode = argv[1];
+        if (mode == "read") {
             eeprom.printDump();
-        } else {
-            std::cout << "Usage: ./m93c56_gpio read" << std::endl;
+        } else if (mode == "write" && argc > 2) {
+            std::string data = argv[2];
+            std::cout << "Writing: " << data << std::endl;
+            for (size_t i = 0; i < data.length(); ++i) {
+                eeprom.writeByte(i, (uint8_t)data[i]);
+            }
+            std::cout << "Write complete." << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
