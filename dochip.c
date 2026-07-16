@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <iomanip>
+#include <fstream>
 #include <wiringPi.h>
 #include <string>
 #include <cstring>
@@ -138,11 +139,55 @@ public:
         }
         std::cout << std::dec << std::endl;
     }
+
+    void backupToFile(const std::string& filename, int size = 256) {
+        std::ofstream file(filename, std::ios::binary);
+        if (!file) {
+            throw std::runtime_error("Could not open file for writing: " + filename);
+        }
+        
+        std::cout << "Backing up " << size << " bytes to " << filename << "..." << std::endl;
+        for (int i = 0; i < size; i++) {
+            uint8_t byte = readByte(i);
+            file.write(reinterpret_cast<const char*>(&byte), 1);
+        }
+        file.close();
+        std::cout << "Backup complete!" << std::endl;
+    }
+
+    void writeFromFile(const std::string& filename) {
+        std::ifstream file(filename, std::ios::binary);
+        if (!file) {
+            throw std::runtime_error("Could not open file for reading: " + filename);
+        }
+        
+        // Determine file size
+        file.seekg(0, std::ios::end);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        
+        if (size > 256) {
+            std::cout << "Warning: File is larger than 256 bytes. Only writing the first 256 bytes." << std::endl;
+            size = 256;
+        } else if (size == 0) {
+            throw std::runtime_error("File is empty.");
+        }
+        
+        std::cout << "Writing " << size << " bytes from " << filename << " to EEPROM..." << std::endl;
+        for (int i = 0; i < size; i++) {
+            uint8_t byte;
+            if (file.read(reinterpret_cast<char*>(&byte), 1)) {
+                writeByte(i, byte);
+            }
+        }
+        file.close();
+        std::cout << "Write complete!" << std::endl;
+    }
 };
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <read|write> [data_string]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <read|backup|write> [filename]" << std::endl;
         return 1;
     }
 
@@ -153,16 +198,18 @@ int main(int argc, char* argv[]) {
 
         if (mode == "read") {
             eeprom.printDump();
-        } else if (mode == "write" && argc > 2) {
-            std::string data = argv[2];
-            std::cout << "Writing: " << data << std::endl;
-            for (size_t i = 0; i < data.length(); ++i) {
-                eeprom.writeByte(i, (uint8_t)data[i]);
+        } else if (mode == "backup") {
+            if (argc < 3) {
+                std::cerr << "Error: Backup command requires a filename. (e.g., ./program backup cluster.bin)" << std::endl;
+                return 1;
             }
-            std::cout << "Write complete. You can run 'read' to verify." << std::endl;
+            eeprom.backupToFile(argv[2]);
         } else if (mode == "write") {
-            std::cerr << "Error: Write command requires a data string." << std::endl;
-            return 1;
+            if (argc < 3) {
+                std::cerr << "Error: Write command requires a filename. (e.g., ./program write mod_cluster.bin)" << std::endl;
+                return 1;
+            }
+            eeprom.writeFromFile(argv[2]);
         } else {
             std::cerr << "Unknown mode: " << mode << std::endl;
             return 1;
