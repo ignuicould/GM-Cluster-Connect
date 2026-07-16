@@ -75,8 +75,6 @@ public:
         for (int i = 8; i >= 0; i--) {
             sendBit((address >> i) & 1);
         }
-
-        int dummy = readBit(); // Consume the dummy '0' bit
         
         uint8_t data = 0;
         // Read 8 bits of Data
