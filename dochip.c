@@ -4,13 +4,18 @@
 #include <wiringPi.h>
 #include <string>
 #include <cstring>
-#include <unistd.h>
 #include <stdexcept>
 
-// Physical Pin 8  -> wPi 14
-// Physical Pin 12 -> wPi 12
-// Physical Pin 13 -> wPi 13
-// Physical Pin 15 -> wPi 3 (CS Jumper)
+/* 
+ * PHYSICAL PIN MAPPING (Banana Pi M2 Zero)
+ * Physical Pin 15 -> wPi 3  (CS Jumper)
+ * Physical Pin 19 -> wPi 12 (MOSI / DI)
+ * Physical Pin 21 -> wPi 13 (MISO / DO)
+ * Physical Pin 23 -> wPi 14 (CLK / SK)
+ * 
+ * Note: If you patched wiringPi, run `gpio readall` to verify 
+ * these wPi numbers haven't changed!
+ */
 const int PIN_SK  = 14; 
 const int PIN_DI  = 12; 
 const int PIN_DO  = 13; 
@@ -24,19 +29,23 @@ public:
         }
         pinMode(PIN_SK, OUTPUT);
         pinMode(PIN_DI, OUTPUT);
-        pinMode(PIN_DO, INPUT);
         pinMode(PIN_CS, OUTPUT);
-        pullUpDnControl(PIN_DO, PUD_OFF); // Ensure DO is floating
+        
+        pinMode(PIN_DO, INPUT);
+        // DIAGNOSTIC CHANGE: We enable the pull-up. If the chip is dead/disconnected, 
+        // readByte will return 0xFF instead of 0x00.
+        pullUpDnControl(PIN_DO, PUD_UP); 
         
         digitalWrite(PIN_SK, LOW);
         digitalWrite(PIN_CS, LOW); // CS idle
+        delayMicroseconds(1000);   // Give the chip time to stabilize
     }
 
     void pulseClock() {
         digitalWrite(PIN_SK, HIGH);
-        usleep(100); // 100 microseconds for stability
+        delayMicroseconds(2); // Reduced for much faster clock
         digitalWrite(PIN_SK, LOW);
-        usleep(100);
+        delayMicroseconds(2);
     }
 
     void sendBit(int bit) {
@@ -46,75 +55,76 @@ public:
 
     int readBit() {
         digitalWrite(PIN_SK, HIGH);
-        usleep(100); // Wait for DO to stabilize
+        delayMicroseconds(2); // Wait for DO to stabilize on rising edge
         int bit = digitalRead(PIN_DO);
         digitalWrite(PIN_SK, LOW);
-        usleep(100);
+        delayMicroseconds(2);
         return bit;
     }
 
     uint8_t readByte(int address) {
         digitalWrite(PIN_CS, HIGH); 
-        usleep(100); // CS setup time
+        delayMicroseconds(2); // CS setup time
         
         sendBit(1); // Start bit
         sendBit(1); // Opcode 1
         sendBit(0); // Opcode 0 (Read)
 
-        // CRITICAL: M93C56 in 8-bit mode requires a 9-bit address (A8 down to A0).
+        // M93C56 8-bit mode requires a 9-bit address (A8 down to A0).
         for (int i = 8; i >= 0; i--) {
             sendBit((address >> i) & 1);
         }
 
-        int dummy = readBit(); // Consume the dummy '0' bit that Microwire outputs here
+        int dummy = readBit(); // Consume the dummy '0' bit
         
         uint8_t data = 0;
-        // Data (8 bits)
+        // Read 8 bits of Data
         for (int i = 7; i >= 0; i--) {
             data = (data << 1) | readBit();
         }
         
         digitalWrite(PIN_CS, LOW); 
-        usleep(100); // CS hold time
+        delayMicroseconds(2); // CS hold time
         return data;
     }
 
     void writeByte(int address, uint8_t data) {
         // 1. EWEN (Erase/Write Enable)
         digitalWrite(PIN_CS, HIGH);
-        usleep(100);
+        delayMicroseconds(2);
         sendBit(1); sendBit(0); sendBit(0); // Start(1) Op(00)
         sendBit(1); sendBit(1);             // EWEN prefix
-        for(int i = 0; i < 7; i++) sendBit(0); // 7 bits padding to complete 9-bit address length
+        for(int i = 0; i < 7; i++) sendBit(0); // 7 bits padding (9-bit total addr length)
         digitalWrite(PIN_CS, LOW);
-        usleep(1000);
+        delayMicroseconds(1000);
 
         // 2. WRITE
         digitalWrite(PIN_CS, HIGH);
-        usleep(100);
+        delayMicroseconds(2);
         sendBit(1); // Start
         sendBit(0); sendBit(1); // Op (01)
         
-        // CRITICAL: 9-bit Address for M93C56
+        // 9-bit Address
         for (int i = 8; i >= 0; i--) {
             sendBit((address >> i) & 1);
         }
         
+        // 8-bit Data
         for (int i = 7; i >= 0; i--) {
             sendBit((data >> i) & 1);
         }
         digitalWrite(PIN_CS, LOW);
         
-        usleep(15000); // Write cycle time (15ms max for this chip)
+        delay(15); // Write cycle time (15ms delay is safer than delayMicroseconds here)
 
         // 3. EWDS (Erase/Write Disable)
         digitalWrite(PIN_CS, HIGH);
-        usleep(100);
+        delayMicroseconds(2);
         sendBit(1); sendBit(0); sendBit(0); // Start(1) Op(00)
         sendBit(0); sendBit(0);             // EWDS prefix
-        for(int i = 0; i < 7; i++) sendBit(0); // 7 bits padding to complete 9-bit address length
+        for(int i = 0; i < 7; i++) sendBit(0); // 7 bits padding
         digitalWrite(PIN_CS, LOW);
-        usleep(1000);
+        delayMicroseconds(1000);
     }
 
     void printDump(int size = 256) {
