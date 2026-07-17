@@ -22,6 +22,8 @@ https://www.mouser.com/en/ProductDetail/511-M93C56-WMN6TP
 
 https://www.mouser.com/en/ProductDetail/STMicroelectronics/M93C56-RMN3TP-K (automotive grade)
 
+Datasheet: https://www.st.com/resource/en/datasheet/m93c76-r.pdf
+
 ## Hardware Configuration
 **WARNING:** This tool interacts with critical vehicle hardware. Ensure all connections are secure before powering the Pi.
 * **ORG Jumper:** Set to **GND** for 8-bit operation (default).
