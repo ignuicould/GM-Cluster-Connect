@@ -65,6 +65,15 @@ The following example assumes 100,000 miles (use your own mileage):
 ./mileage 100,000
 ```
 
+### Mileage Output (expected)
+
+```cmd
+Target Odometer : 100000 miles
+Calculated VSS  : 400000000 pulses (0x17d78400)
+Encoded Hex     : 17 D7 84 00
+BCM 0x0080 Write: 17 D7 84 00 17 D7 84 00 17 D7 84 00
+```
+
 
 
 
