@@ -16,10 +16,15 @@ This project provides a hardware platform and a Python-based utility to read ful
   * Flash binary files back to the chip.
   * Support for 8-bit and 16-bit Microwire modes.
 
+## Replacement Chip
+
+https://www.mouser.com/en/ProductDetail/511-M93C56-WMN6TP
+
+https://www.mouser.com/en/ProductDetail/STMicroelectronics/M93C56-RMN3TP-K (automotive grade)
+
 ## Hardware Configuration
 **WARNING:** This tool interacts with critical vehicle hardware. Ensure all connections are secure before powering the Pi.
 * **ORG Jumper:** Set to **GND** for 8-bit operation (default).
-* **CS Jumper:** Must be in the **ENABLED (HIGH)** state to permit read/write operations.
 
 ## Setup & Installation
 
@@ -38,14 +43,14 @@ sudo ./cluster read
 ```
 
 ### Creating Backup of Cluster Data
-Run the following command to compile cluster.cpp:
+Run the following command to make a backup of your current cluster data:
 
 ```cmd
 sudo ./cluster backup "mycluster.bin"
 ```
 
 ### Writing Backup of Cluster Data to a New Chip
-Run the following command to compile cluster.cpp:
+Run the following command to copy your cluster data onto a new chip:
 
 ```cmd
 sudo ./cluster write "mycluster.bin"
