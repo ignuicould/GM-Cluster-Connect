@@ -11,7 +11,7 @@ This project provides a hardware platform and a Python-based utility to read ful
   * Configurable jumper for ORG (mode selection).
   * Decoupling capacitor footprint for signal stability.
 
-* **Python EEPROM Controller:** Command-line utility to:
+* **C++/Python EEPROM Controller:** Command-line utility to:
   * Perform full-chip reads/dumps to .bin files.
   * Flash binary files back to the chip.
   * Support for 8-bit and 16-bit Microwire modes.
