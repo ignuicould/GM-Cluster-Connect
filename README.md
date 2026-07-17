@@ -8,7 +8,7 @@ This project provides a hardware platform and a Python-based utility to read ful
 ## Features
 * **Dedicated Hardware HAT:** Custom PCB layout for Raspberry Pi featuring:
   * Direct Microwire interfacing via GPIO.
-  * Configurable jumpers for ORG (mode selection) and CS (Enable/Disable).
+  * Configurable jumper for ORG (mode selection).
   * Decoupling capacitor footprint for signal stability.
 
 * **Python EEPROM Controller:** Command-line utility to:
