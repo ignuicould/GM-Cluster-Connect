@@ -7,7 +7,7 @@ This project provides a hardware platform and a Python-based utility to read ful
 
 ## Features
 * **Dedicated Hardware HAT:** Custom PCB layout for Raspberry Pi featuring:
-  * Direct SPI interfacing via GPIO.
+  * Direct Microwire interfacing via GPIO.
   * Configurable jumpers for ORG (mode selection) and CS (Enable/Disable).
   * Decoupling capacitor footprint for signal stability.
 
