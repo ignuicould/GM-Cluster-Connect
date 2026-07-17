@@ -38,7 +38,7 @@ g++ -o cluster cluster.cpp -lwiringPi -lpthread -lm -lcrypt
 ```
 
 ### Reading Cluster Data
-Run the following command to compile cluster.cpp:
+Run the following command to read the data from the EEPROM:
 
 ```cmd
 sudo ./cluster read
