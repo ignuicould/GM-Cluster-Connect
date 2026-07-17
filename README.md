@@ -23,7 +23,53 @@ This project provides a hardware platform and a Python-based utility to read ful
 
 ## Setup & Installation
 
-### Prerequisites
+### Instrument Cluster
+Run the following command to compile cluster.cpp:
+
+```cmd
+g++ -o cluster cluster.cpp -lwiringPi -lpthread -lm -lcrypt
+```
+
+### Reading Cluster Data
+Run the following command to compile cluster.cpp:
+
+```cmd
+sudo ./cluster read
+```
+
+### Creating Backup of Cluster Data
+Run the following command to compile cluster.cpp:
+
+```cmd
+sudo ./cluster backup "mycluster.bin"
+```
+
+### Writing Backup of Cluster Data to a New Chip
+Run the following command to compile cluster.cpp:
+
+```cmd
+sudo ./cluster write "mycluster.bin"
+```
+
+### BCM Mileage Calculator
+Run the following command to compile mileage.cpp:
+
+```cmd
+g++ -O2 -o mileage mileage.cpp
+```
+
+### Generating Mileage Hex
+The following example assumes 100,000 miles (use your own mileage):
+
+```cmd
+./mileage 100,000
+```
+
+
+
+
+
+### Python approach (not verified working)
 Run the following commands on your Raspberry Pi to prepare the environment and enable SPI:
 
 ```cmd
