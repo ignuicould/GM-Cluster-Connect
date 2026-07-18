@@ -20,7 +20,7 @@ This project provides a hardware platform and a utility to read full-chip binary
 
 https://www.mouser.com/en/ProductDetail/511-M93C56-WMN6TP
 
-https://www.mouser.com/en/ProductDetail/STMicroelectronics/M93C56-RMN3TP-K (automotive grade)
+https://www.mouser.com/en/ProductDetail/STMicroelectronics/M93C56-RMN3TP-K?qs=4b8myOmUP%252BuoaWIOXeCfgQ%3D%3D (automotive grade)
 
 Datasheet: https://www.st.com/resource/en/datasheet/m93c76-r.pdf
 
