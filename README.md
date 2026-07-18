@@ -3,7 +3,7 @@ GM Cluster Connect is a dedicated Raspberry Pi HAT designed for interfacing with
 
 ![GM Cluster Connect HAT Raspberry Pi](./img/gm-cluster-connect-hat-raspberry-pi.png)
 
-This project provides a hardware platform and a Python-based utility to read full-chip binary dumps and write backups back to new EEPROM chips, allowing for cluster restoration and maintenance.
+This project provides a hardware platform and a utility to read full-chip binary dumps and write backups back to new EEPROM chips, allowing for cluster restoration and maintenance.
 
 ## Features
 * **Dedicated Hardware HAT:** Custom PCB layout for Raspberry Pi featuring:
